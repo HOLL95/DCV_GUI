@@ -269,6 +269,8 @@ class DCV_peak_area():
         self.check.on_clicked(self.hiding)
         #self.radio1.on_clicked(self.show_bg_func)
         self.radio3.on_clicked(self.show_peak_position)
+        for element in [self.radio2, self.check, self.radio3]:
+            element.on_clicked(self.update)
         for radios in [self.radio2]:
             for circle in radios.circles:
                 circle.set_radius(0.09)
