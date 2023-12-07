@@ -325,9 +325,24 @@ class Automated_trumpet(DCV_peak_area):
         scale_dict={}
         for i in range(0,len(file_list)):
             DCV_data=np.loadtxt(kwargs["data_loc"]+file_list[i], skiprows=kwargs["skiprows"])
-            time=DCV_data[:,0]
-            current=DCV_data[:,2]
-            potential=DCV_data[:,1]
+            if DCV_data.shape[1]!=3:
+                warnings.warn("Attempting to get scan rate from potential - life is easier if the files have a time column")
+                if isinstance(scan_rates, bool) is True:
+                    raise ValueError("Extracting time from potential only works if you know the scan rate")
+                potential=DCV_data[:,0]
+                current=DCV_data[:,1]
+                diffed=abs(np.diff(potential))
+                if np.std(diffed)>1e-6:
+                    raise ValueError("Either potential is in the wrong place or potential too noisy to recover time")
+                current_scan_rate=scan_rates[i]/1000
+                timesteps=np.divide(diffed, current_scan_rate)
+                time=np.append(0,np.cumsum(timesteps))
+            else:
+                time=DCV_data[:,0]
+                current=DCV_data[:,2]
+                potential=DCV_data[:,1]
+
+            
             if isinstance(scan_rates, bool) is False:
                 scan_arg=scan_rates[i]
             else:
@@ -356,7 +371,7 @@ class Automated_trumpet(DCV_peak_area):
             mv_has_scan=True
             if "mv" in filename:
                 try:
-                    match=re.findall("\d+(?:\.\d+)?(?=mv)", filename)[0]
+                    match=re.findall(r"\d+(?:\.\d+)?(?=(?:_|\s)?mv)", filename)[0]
                     scan_list.append(float(match))
                 except:
                     mv_has_scan=False
