@@ -319,18 +319,24 @@ class Automated_trumpet(DCV_peak_area):
             kwargs["data_loc"]=""
         if "area" not in kwargs:
             raise ValueError("Need to define an area")
+        if "data_order" not in kwargs:
+            kwargs["data_order"]=["time", "potential", "current"]
         update_file_list, scan_rates=self.sort_file_list(file_list)
         if isinstance(update_file_list, bool) is False:
             file_list=update_file_list
         scale_dict={}
+        pot_idx=kwargs["data_order"].index("potential")
+        curr_idx=kwargs["data_order"].index("current")
+
         for i in range(0,len(file_list)):
             DCV_data=np.loadtxt(kwargs["data_loc"]+file_list[i], skiprows=kwargs["skiprows"])
-            if DCV_data.shape[1]!=3:
+            if DCV_data.shape[1]<3:
                 warnings.warn("Attempting to get scan rate from potential - life is easier if the files have a time column")
                 if isinstance(scan_rates, bool) is True:
                     raise ValueError("Extracting time from potential only works if you know the scan rate")
-                potential=DCV_data[:,0]
-                current=DCV_data[:,1]
+                
+                potential=DCV_data[:,pot_idx]
+                current=DCV_data[:,curr_idx]
                 diffed=abs(np.diff(potential))
                 if np.std(diffed)>1e-6:
                     raise ValueError("Either potential is in the wrong place or potential too noisy to recover time")
@@ -338,11 +344,12 @@ class Automated_trumpet(DCV_peak_area):
                 timesteps=np.divide(diffed, current_scan_rate)
                 time=np.append(0,np.cumsum(timesteps))
             else:
-                time=DCV_data[:,0]
-                current=DCV_data[:,2]
-                potential=DCV_data[:,1]
+                time_idx=kwargs["data_order"].index("time")
+                time=DCV_data[:,time_idx]
+                current=DCV_data[:,curr_idx]
+                potential=DCV_data[:,pot_idx]
 
-            
+
             if isinstance(scan_rates, bool) is False:
                 scan_arg=scan_rates[i]
             else:
